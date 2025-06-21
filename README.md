@@ -1,11 +1,18 @@
 **Updates:**
 
+
 Assembled ROM now matches the newer F3F7 version.
+
 Search the ASM files for f3f7 to see the changes.
+
 It could use some work to comment and define the addresses.
+
 I'm compiling on windows - see winbuild.cmd
+
 You'll need Python, alink, jwasm, and GNU dd, make, tail.
+
 A zip with most of those can be found here:
+
 [https://victor9000.com/files/v9k-bios-build.zip](https://victor9000.com/files/v9k-bios-build.zip)
 
 ___
