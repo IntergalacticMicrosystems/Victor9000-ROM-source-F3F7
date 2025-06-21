@@ -22,6 +22,7 @@ code 	segment public 'code';
 	extrn	hd_reset:near;		initialize hard disk driver
 	extrn	char_init:near;		initialize character font table
 	extrn	cu_oprn:near;		perform control unit operations
+	extrn   FD_not_sure_15BA:near ; f3f7 mod
 
 code	ends;
 
@@ -303,18 +304,48 @@ boot2:;					initialization code
 
 	call	crt_reset;	reset the CRT controller
 
+
+; f3f7 mods :00AE
+; display version on left bottom corner, maybe
+	mov ax, 0FFFFh
+	mov es, ax
+	db 026h, 0A1h, 0Ah, 00h  	; fixme - mov ax,es:FE_version	- not sure how to bring this in from bt1init.asm
+								; prob ok as it just references the hard-coded location near the end of the ROM								
+	mov cl,4
+	mov bh,al
+	shr bh, cl
+	mov bl, al
+	and bl, 0Fh
+	mov al, ah
+	shr ah, cl
+	and al, 0Fh
+	mov cl, 1
+	call d_char
+
+; not sure, maybe diff code to blink the drive led(s)
+	mov     ax, 0E800h      ; E800h = ioport for 6500 (crt, floppy)
+	mov     es, ax
+	mov     byte ptr es:0CFh, 5
+	xor     bl, bl
+	call FD_not_sure_15BA		
+
+	mov     ax, 1388h
+	call    time
+	and     byte ptr es:0CFh, 0FAh
+; --f3f7 mods :00AE
+
 ;
 ;	blink the LED's on the floppies to tell the user we're alive
 ;
-	mov	ax,seg ioports;	address the floppy registers
-	mov	es,ax;
+	; mov	ax,seg ioports;	address the floppy registers
+	; mov	es,ax;
 
-	mov	es:[read_pera],f_led0+f_led1;	turn both led's on
+	; mov	es:[read_pera],f_led0+f_led1;	turn both led's on
 
-	mov	ax,5000;	wait a half second
-	call	time;
+	; mov	ax,5000;	wait a half second
+	; call	time;
 
-	and	es:[read_pera],NOT (f_led0+f_led1);	reset the led's
+	; and	es:[read_pera],NOT (f_led0+f_led1);	reset the led's
 
 ;
 ;	check for non-fatal errors, and display them if present
@@ -398,6 +429,12 @@ retry_boot:;
 	call	fd_reset;
 	call	hd_reset;
 
+; f3f7 mods :015F
+	call erase_all
+	xor     bl, bl
+	call FD_not_sure_15BA 		
+; --f3f7 mods :015F
+
 ;
 ;	test and size memory
 ;
@@ -442,24 +479,36 @@ test_pattern:;
 	jmp short test_pattern;
 
 section_ok:;
-	cmp	cu_table.wrk_unit,ignore;
-	jz	no_floppy_drive;	skip polling if no floppy drives
 
-	mov	lrb.dun,0;		check drive 0
-	mov	lrb.op,ready;		test for device ready
+; f3f7 mods :019F
 
-	push	es;			save registers
-	call	cu_oprn;		perform the ready test
-	inc	word ptr lrb.dun;		check drive 1
-	call	cu_oprn;		perform the ready test
-	pop	es;			restore registers
+	mov     ax, es
+	add     ax, 400h
+	mov     es, ax
+	assume es:nothing
+	cmp     ax, 0E000h
+	jnz     short test_section
 
-no_floppy_drive:;
-	mov	ax,es;
-	add	ax,16*1024/16;		next 16K (in paragraphs)
-	mov	es,ax;
-	cmp	ax,word ptr 896*(1024/16);	at end of memory ?
-	jnz	test_section;		no, test next 16K
+; --f3f7 mods :019F
+
+; 	cmp	cu_table.wrk_unit,ignore;
+; 	jz	no_floppy_drive;	skip polling if no floppy drives
+
+; 	mov	lrb.dun,0;		check drive 0
+; 	mov	lrb.op,ready;		test for device ready
+
+; 	push	es;			save registers
+; 	call	cu_oprn;		perform the ready test
+; 	inc	word ptr lrb.dun;		check drive 1
+; 	call	cu_oprn;		perform the ready test
+; 	pop	es;			restore registers
+
+; no_floppy_drive:;
+; 	mov	ax,es;
+; 	add	ax,16*1024/16;		next 16K (in paragraphs)
+; 	mov	es,ax;
+; 	cmp	ax,word ptr 896*(1024/16);	at end of memory ?
+; 	jnz	test_section;		no, test next 16K
 
 memory_tested:;
 	mov	bvt.memsz,es;		save in boot vector table

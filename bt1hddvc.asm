@@ -398,14 +398,26 @@ okrecal:;
 ;	have read the label, verify it
 ;
 hdonllok:;
-	cmp	bootr.lbltyp,1;		valid format ?
-	mov	ah,badhlbl;		preset to bad label error
-	jnz	hdonleri;		invalid label format
+	; f3f7 mods :1714
+	mov ah, 098h
+	cmp     word ptr ds:0C00h, 1
+	jb      short hdonleri
+	cmp     word ptr ds:0C00h, 2
+	ja      short hdonleri
+	mov     ah, 99h
+	mov     cx, ds:0C16h
+	or      cx, ds:0C18h
+	jz      hdonleri
+	; --f3f7 mods :1714
 
-	mov	cx,word ptr bootr.iplda;have an O/S on the disk ?
-	or	cx,word ptr bootr.iplda+2;
-	mov	ah,nohdos;		preset to no O/S error
-	jz	hdonleri;		no, error
+	; cmp	bootr.lbltyp,1;		valid format ?
+	; mov	ah,badhlbl;		preset to bad label error
+	; jnz	hdonleri;		invalid label format
+
+	; mov	cx,word ptr bootr.iplda;have an O/S on the disk ?
+	; or	cx,word ptr bootr.iplda+2;
+	; mov	ah,nohdos;		preset to no O/S error
+	; jz	hdonleri;		no, error
 
 ;
 ;	stuff disk parameters into controller
@@ -684,7 +696,13 @@ use_al:;
 	push	bp;
 	push	dx;			save registers
 	push	bx;
+	;	call	pblock_io;		perform physical block I/O
+	; f3f7 mod 187C
+	push si
 	call	pblock_io;		perform physical block I/O
+	pop si
+	; --f3f7 mod 187C	
+
 	pop	bx;
 	pop	dx;			restore registers
 	pop	bp;
@@ -702,6 +720,12 @@ use_al:;
 ;	have completed a hard disk region's transfer
 ;
 end_region:;
+	; f3f7 mod 1898	
+	mov     ax, ds:2E8h
+	mov     ds:312h, ax
+	mov     ax, ds:2EAh
+	mov     ds:314h, ax
+	; --f3f7 mod 1898	
 	or	dx,dx;			finished ?
 	jz	break;			yes
 

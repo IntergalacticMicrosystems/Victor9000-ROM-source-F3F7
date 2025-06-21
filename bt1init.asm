@@ -122,7 +122,7 @@ extra_io	ends;
 ;
 diagn	segment;
 
-FE_version	equ	0F3F6h;	version of ROM for FE's
+FE_version	equ	0F3F7h;	version of ROM for FE's
 
 ioport	equ	0FFFFh;		port to tell field service what's wrong
 FE_screen	equ	01h;	FE error unreproducable screen ram error

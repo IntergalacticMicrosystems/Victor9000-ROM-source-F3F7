@@ -1,11 +1,8 @@
 AS=jwasm
 ASFLAGS=-0 -c -Sg -Fl -Zm -Zne -omf
-EXT=o
+EXT=obj
 
-all: borked universal.hex universal.rom
-
-universal.hex: universal.rom
-	hexdump -v -C $< > $@
+all: universal.rom
 
 universal.exe: bt1base.$(EXT)  bt1cuopn.$(EXT) bt1ntdvc.$(EXT) bt1chint.$(EXT) \
 	       bt1iconc.$(EXT) bt1vars.$(EXT)  bt1fddvc.$(EXT) bt1hddvc.$(EXT) \
@@ -15,13 +12,17 @@ universal.exe: bt1base.$(EXT)  bt1cuopn.$(EXT) bt1ntdvc.$(EXT) bt1chint.$(EXT) \
 universal.rom: universal.exe
 	dd if=$(basename $@).exe bs=1 skip=64 count=7424 > $@
 	tail -c 768 $(basename $@).exe >> $@
-	./add-checksum.py $@
+	python add-checksum.py $@
 
 %.$(EXT): %.asm
 	$(AS) $(ASFLAGS) $<
-
-borked: universal.hex
-	diff $< ../sirius1_universal_f3f6.hex > $@
+	
+clean:
+	del *.obj
+	del *.lst
+	del *.err
+	del universal.rom
+	del universal.exe	
 
 bt1base.$(EXT): bt1ul.str bt1bvt.str bt1lrb.str
 

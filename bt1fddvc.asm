@@ -185,7 +185,7 @@ public	fd_online;
 public	fd_read;
 public	fd_quiesce;
 public	fd_status;
-
+public  FD_not_sure_15BA;   ; f3f7 mod
 
 page
 ;
@@ -411,22 +411,35 @@ want_door0:;
 ;	have a result for the door--
 ;		but if it is closed, turn on motor to seat disk properly
 ;
-	or	al,al;			set z-flag to the result
-	jnz	open;			it's open, just return
+	or	al,al;			set z-flag to the result	
+	;jnz	open;			it's open, just return
+; f3f7 mods :10F5
+	jz	open1	
+	push ax
+	call motor_off
+	pop ax
+	or al,al
+	jmp open
 
+	nop
+
+open1:
+	call fd_not_sure_15A4
 ;
 ;	start the motor
 ;
-	xor	bh,bh;			bl is drive, use bx as index
+; 	xor	bh,bh;			bl is drive, use bx as index
 
-	lea	si,ioports:motor_0;	base of speed control registers
-	sub	si,bx;			select drive's register
-	mov	al,es:[si];		read motor information
-	and	al,0FFh - f_motoff;	get rid of speed status
-;					and use speed zone 0
-	mov	es:[si],al;		and write to drive's motor control
+; 	lea	si,ioports:motor_0;	base of speed control registers
+; 	sub	si,bx;			select drive's register
+; 	mov	al,es:[si];		read motor information
+; 	and	al,0FFh - f_motoff;	get rid of speed status
+; ;					and use speed zone 0
+; 	mov	es:[si],al;		and write to drive's motor control
 
-	xor	ax,ax;			flag door is closed
+; --f3f7 mods :10F5
+
+ 	xor	ax,ax;			flag door is closed
 open:;
 	ret;				(zero if it's present)
 
@@ -1464,8 +1477,31 @@ desel_drvs	proc;
 desel_drvs	endp;
 
 
+; f3f7 mods :15A4
 
+fd_not_sure_15A4:
+	mov     ax, 0E800h
+	mov     es, ax
+	xor     bh, bh
+	lea     si, ds:0A1h
+	sub     si, bx
+	mov     al, es:[si]
+	and     al, 0F0h
+	mov     es:[si], al
+	retn
 
+FD_not_sure_15BA:
+	xor     cx, cx
+
+FD_not_sure_15BA_loop:                  
+	call    fd_not_sure_15A4
+	xor     bl, 1
+	inc     cx
+	cmp     cx, 2
+	jnz     short FD_not_sure_15BA_loop
+	retn
+
+; --f3f7 mods :15A4
 
 ;
 ;	turn the motors off on both drives
